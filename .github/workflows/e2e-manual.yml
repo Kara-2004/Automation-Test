@@ -1,0 +1,35 @@
+name: Manual E2E
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    # Change to [self-hosted, ddbd-network] when BASE_URL is only reachable through VPN/internal network.
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      STANDARD_USERNAME: ${{ secrets.STANDARD_USERNAME }}
+      STANDARD_PASSWORD: ${{ secrets.STANDARD_PASSWORD }}
+      RUN_DESTRUCTIVE: 'false'
+      RUN_SECURITY: 'false'
+      RUN_LONG_RUNNING: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
